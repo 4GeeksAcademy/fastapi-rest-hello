@@ -1,16 +1,64 @@
 import os
-from flask_admin import Admin
-from models import db, User
-from flask_admin.contrib.sqla import ModelView
+from fastapi_admin.app import app as admin_app
+from fastapi_admin.providers.login import UsernamePasswordProvider
+from fastapi_admin.template import templates
+from fastapi_admin.widgets import inputs, displays
+from fastapi_admin.resources import Model
+from .models import User
 
-def setup_admin(app):
-    app.secret_key = os.environ.get('FLASK_APP_KEY', 'sample key')
-    app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
-    admin = Admin(app, name='4Geeks Admin', template_mode='bootstrap3')
-
+async def setup_admin(app):
+    await admin_app.configure(
+        templates=templates,
+        providers=[
+            UsernamePasswordProvider(
+                admin_model=User,
+                login_field="username",
+                password_field="password",
+            )
+        ],
+        admin_secret=os.environ.get('FASTAPI_ADMIN_SECRET', 'sample_secret'),
+    )
     
-    # Add your models here, for example this is how we add a the User model to the admin
-    admin.add_view(ModelView(User, db.session))
+    # Add your models here, for example this is how we add the User model to the admin
+    admin_app.register_model(
+        Model(
+            label="User",
+            model=User,
+            page_display=displays.PageDisplay(
+                fields=[
+                    displays.Field(name="id"),
+                    displays.Field(name="username"),
+                    displays.Field(name="email"),
+                ]
+            ),
+            page_form=inputs.PageForm(
+                fields=[
+                    inputs.Input(name="username"),
+                    inputs.Input(name="email"),
+                ]
+            ),
+        )
+    )
 
-    # You can duplicate that line to add mew models
-    # admin.add_view(ModelView(YourModelName, db.session))
+    # You can duplicate that block to add new models
+    # admin_app.register_model(
+    #     Model(
+    #         label="YourModelName",
+    #         model=YourModelName,
+    #         page_display=displays.PageDisplay(
+    #             fields=[
+    #                 displays.Field(name="id"),
+    #                 displays.Field(name="field1"),
+    #                 displays.Field(name="field2"),
+    #             ]
+    #         ),
+    #         page_form=inputs.PageForm(
+    #             fields=[
+    #                 inputs.Input(name="field1"),
+    #                 inputs.Input(name="field2"),
+    #             ]
+    #         ),
+    #     )
+    # )
+
+    app.mount("/admin", admin_app)

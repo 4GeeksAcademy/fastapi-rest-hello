@@ -2,50 +2,76 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for
-from flask_migrate import Migrate
-from flask_swagger import swagger
-from flask_cors import CORS
-from utils import APIException, generate_sitemap
-from admin import setup_admin
-from models import db, User
-#from models import Person
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine
+from starlette.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from .utils import APIException, generate_sitemap
+from .admin import setup_admin
+from .models import Base, User
 
-app = Flask(__name__)
-app.url_map.strict_slashes = False
+app = FastAPI()
 
-db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
+# # Database configuration
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db").replace("postgres://", "postgresql://")
+
+if "sqlite" in SQLALCHEMY_DATABASE_URL:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-MIGRATE = Migrate(app, db)
-db.init_app(app)
-CORS(app)
-setup_admin(app)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Handle/serialize errors like a JSON object
-@app.errorhandler(APIException)
-def handle_invalid_usage(error):
-    return jsonify(error.to_dict()), error.status_code
+# Create the database tables
+Base.metadata.create_all(bind=engine)
 
-# generate sitemap with all your endpoints
-@app.route('/')
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Middleware for CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Middleware for handling exceptions
+@app.middleware("http")
+async def add_process_time_header(request, call_next):
+    try:
+        response = await call_next(request)
+    except APIException as e:
+        return JSONResponse(status_code=e.status_code, content=e.to_dict())
+    return response
+
+# Setup admin
+@app.on_event("startup")
+async def on_startup():
+    await setup_admin(app)
+
+# Generate sitemap with all your endpoints
+@app.get("/")
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
+@app.get("/user")
 def handle_hello():
-
     response_body = {
         "msg": "Hello, this is your GET /user response "
     }
-
-    return jsonify(response_body), 200
+    return JSONResponse(content=response_body)
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
+    import uvicorn
     PORT = int(os.environ.get('PORT', 3000))
-    app.run(host='0.0.0.0', port=PORT, debug=False)
+    uvicorn.run(app, host='0.0.0.0', port=PORT)

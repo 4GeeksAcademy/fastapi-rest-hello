@@ -6,25 +6,24 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-flask = "*"
 sqlalchemy = "*"
-flask-sqlalchemy = "*"
-flask-migrate = "*"
 flask-swagger = "*"
 psycopg2-binary = "*"
 python-dotenv = "*"
 mysql-connector-python = "*"
-flask-cors = "*"
-gunicorn = "*"
 mysqlclient = "*"
-flask-admin = "*"
+fastapi = "*"
+uvicorn = "*"
+alembic = "*"
+pydantic = "*"
+fastapi-admin = "*"
 
 [requires]
 python_version = "3.10"
 
 [scripts]
-start="flask run -p 3000 -h 0.0.0.0"
-init="flask db init"
-migrate="flask db migrate"
-upgrade="flask db upgrade"
+start="uvicorn src.app:app --reload --host 0.0.0.0 --port 3000"
+init="alembic init alembic"
+migrate="alembic revision --autogenerate -m 'Initial migration'"
+upgrade="alembic upgrade head"
 deploy="echo 'Please follow this 3 steps to deploy: https://start.4geeksacademy.com/deploy/render' "
