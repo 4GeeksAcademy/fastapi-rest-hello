@@ -1,4 +1,4 @@
-<a href="https://www.breatheco.de"><img height="280" align="right" src="https://github.com/4GeeksAcademy/fastapi-rest-hello/blob/main/docs/assets/fastapi.jpg?raw=true"></a>
+<a href="https://www.breatheco.de"><img height="250" align="right" margin-top="90" src="https://github.com/4GeeksAcademy/fastapi-rest-hello/blob/main/docs/assets/fastapi.jpg?raw=true"></a>
 
 # FastAPI Template for Junior Developers
 
