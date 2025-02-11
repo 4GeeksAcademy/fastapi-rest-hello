@@ -2,14 +2,16 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from starlette.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.staticfiles import StaticFiles
+from sqladmin import Admin
+from fastapi.responses import FileResponse
 from .utils import APIException, generate_sitemap
-from .admin import setup_admin
+from .admin import register_admin_views
 from .models import Base, User
 
 app = FastAPI()
@@ -53,22 +55,31 @@ async def add_process_time_header(request, call_next):
         return JSONResponse(status_code=e.status_code, content=e.to_dict())
     return response
 
-# Setup admin
-@app.on_event("startup")
-async def on_startup():
-    await setup_admin(app)
+# setup the admin interface
+admin = Admin(app, engine)
+register_admin_views(admin)
 
-# Generate sitemap with all your endpoints
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Generate the sitemap
+@app.get("/sitemap")
+async def sitemap():
+    # return a list of all the routes in the app
+    return JSONResponse(content=generate_sitemap(app))
+    
+
+# Serve the index file
 @app.get("/")
-def sitemap():
-    return generate_sitemap(app)
+async def read_index():
+    return FileResponse("static/index.html")
 
 @app.get("/user")
 def handle_hello():
     response_body = {
         "msg": "Hello, this is your GET /user response "
     }
-    return JSONResponse(content=response_body)
+    return JSONResponse(content=response_body, status_code=200)
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':

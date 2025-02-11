@@ -1,0 +1,17 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+}
+img {
+    max-height: 80px;
+}
+input {
+    padding: 5px;
+    width: 300px;
+}
+ul {
+    text-align: left;
+    display: inline-block;
+    margin-top: 10px;
+}

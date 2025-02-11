@@ -16,7 +16,7 @@ fastapi = "*"
 uvicorn = "*"
 alembic = "*"
 pydantic = "*"
-fastapi-admin = "*"
+sqladmin = "*"
 
 [requires]
 python_version = "3.10"
