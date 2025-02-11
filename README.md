@@ -28,7 +28,7 @@ pipenv run upgrade
 
 There is a sample API running with a sample database. All your application code should be written inside the `./src/` folder.
 
-- `src/main.py` (this is where you should code your endpoints with FastAPI)  
+- `src/app.py` (this is where you should code your endpoints with FastAPI)  
 - `src/models.py` (your database tables and serialization logic using SQLAlchemy)  
 - `src/utils.py` (some reusable classes and functions)  
 - `src/admin.py` (FastAPI Admin configuration to easily manage data)  
